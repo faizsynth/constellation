@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethereal Particle Constellation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: rgb(10, 10, 20);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .content {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 100;
+            color: white;
+            letter-spacing: 0.5em;
+            opacity: 0.9;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        p {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            font-weight: 300;
+            margin-top: 1rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="overlay">
+        <div class="content">
+            <h1>ETHEREAL</h1>
+            <p>Move to interact</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: 0, y: 0 };
+        let hue = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 200) {
+                    const force = (200 - dist) / 200;
+                    this.vx += (dx / dist) * force * 0.05;
+                    this.vy += (dy / dist) * force * 0.05;
+                }
+
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${hue}, 80%, 70%, 0.8)`;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        const alpha = (1 - dist / 120) * 0.3;
+                        ctx.strokeStyle = `hsla(${hue}, 80%, 70%, ${alpha})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                });
+            });
+
+            hue = (hue + 0.3) % 360;
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches[0]) {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }
+        });
+    </script>
+</body>
+</html>
